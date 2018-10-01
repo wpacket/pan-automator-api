@@ -1,0 +1,52 @@
+/config/devices/entry[@name='localhost.localdomain']/template/entry[@name='{{ hostname }}_network']/config/devices/entry[@name='localhost.localdomain']/deviceconfig/system;<login-banner>{{ hostname }}</login-banner>
+/config/devices/entry[@name='localhost.localdomain']/template/entry[@name='{{ hostname }}_network']/config/devices/entry[@name='localhost.localdomain']/network/profiles/interface-management-profile/entry[@name='ping'];<ping>yes</ping>
+{% for id in interfaces %}
+  {% if id.vlan is defined %}
+/config/devices/entry[@name='localhost.localdomain']/template/entry[@name='{{ hostname }}_network']/config/devices/entry[@name='localhost.localdomain']/network/interface/ethernet/entry[@name='{{ id.id }}']/layer3/units/entry[@name='{{ id.id }}.{{ id.vlan }}'];<comment>{{ id.comment }}</comment><tag>{{ id.vlan }}</tag><interface-management-profile>ping</interface-management-profile>
+/config/devices/entry[@name='localhost.localdomain']/template/entry[@name='{{ hostname }}_network']/config/devices/entry[@name='localhost.localdomain']/network/interface/ethernet/entry[@name='{{ id.id }}']/layer3/units/entry[@name='{{ id.id }}.{{ id.vlan }}']/ip;<entry name='{{ id.address }}'/>
+/config/devices/entry[@name='localhost.localdomain']/template/entry[@name='{{ hostname }}_network']/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/import/network/interface;<member>{{ id.id }}.{{ id.vlan }}</member>
+/config/devices/entry[@name='localhost.localdomain']/template/entry[@name='{{ hostname }}_network']/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/zone/entry[@name='{{ id.zone }}']/network/layer3;<member>{{ id.id }}.{{ id.vlan }}</member>
+/config/devices/entry[@name='localhost.localdomain']/template/entry[@name='{{ hostname }}_network']/config/devices/entry[@name='localhost.localdomain']/network/virtual-router/entry[@name='default']/interface;<member>{{ id.id }}.{{ id.vlan }}</member>
+    {% if id.dhcprelay == True %}
+/config/devices/entry[@name='localhost.localdomain']/template/entry[@name='{{ hostname }}_network']/config/devices/entry[@name='localhost.localdomain']/network/dhcp/interface/entry[@name='{{ id.id }}.{{ id.vlan }}']/relay/ip/server;<member>10.0.0.69</member><member>10.0.0.70</member>
+/config/devices/entry[@name='localhost.localdomain']/template/entry[@name='{{ hostname }}_network']/config/devices/entry[@name='localhost.localdomain']/network/dhcp/interface/entry[@name='{{ id.id }}.{{ id.vlan }}']/relay/ip;<enabled>yes</enabled>
+    {% endif %}
+  {% else %}
+/config/devices/entry[@name='localhost.localdomain']/template/entry[@name='{{ hostname }}_network']/config/devices/entry[@name='localhost.localdomain']/network/interface/ethernet/entry[@name='{{ id.id }}']/layer3/ip;<entry name='{{ id.address }}'/>
+/config/devices/entry[@name='localhost.localdomain']/template/entry[@name='{{ hostname }}_network']/config/devices/entry[@name='localhost.localdomain']/network/interface/ethernet/entry[@name='{{ id.id }}']/layer3;<interface-management-profile>ping</interface-management-profile>
+/config/devices/entry[@name='localhost.localdomain']/template/entry[@name='{{ hostname }}_network']/config/devices/entry[@name='localhost.localdomain']/network/interface/ethernet/entry[@name='{{ id.id }}'];<comment>{{ id.comment }}</comment>
+/config/devices/entry[@name='localhost.localdomain']/template/entry[@name='{{ hostname }}_network']/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/import/network/interface;<member>{{ id.id }}</member>
+/config/devices/entry[@name='localhost.localdomain']/template/entry[@name='{{ hostname }}_network']/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/zone/entry[@name='{{ id.zone }}']/network/layer3;<member>{{ id.id }}</member>
+/config/devices/entry[@name='localhost.localdomain']/template/entry[@name='{{ hostname }}_network']/config/devices/entry[@name='localhost.localdomain']/network/virtual-router/entry[@name='default']/interface;<member>{{ id.id }}</member>
+    {% if id.dhcprelay == True %}
+/config/devices/entry[@name='localhost.localdomain']/template/entry[@name='{{ hostname }}_network']/config/devices/entry[@name='localhost.localdomain']/network/dhcp/interface/entry[@name='{{ id.id }}']/relay/ip/server;<member>10.0.0.69</member><member>10.0.0.70</member>
+/config/devices/entry[@name='localhost.localdomain']/template/entry[@name='{{ hostname }}_network']/config/devices/entry[@name='localhost.localdomain']/network/dhcp/interface/entry[@name='{{ id.id }}']/relay/ip;<enabled>yes</enabled>
+    {% endif %}
+  {% endif %}
+{% endfor %}
+{% for name in routes %}
+/config/devices/entry[@name='localhost.localdomain']/template/entry[@name='{{ hostname }}_network']/config/devices/entry[@name='localhost.localdomain']/network/virtual-router/entry[@name='default']/routing-table/ip/static-route/entry[@name='{{ name.name }}']/nexthop;<ip-address>{{ name.nexthop }}</ip-address>
+/config/devices/entry[@name='localhost.localdomain']/template/entry[@name='{{ hostname }}_network']/config/devices/entry[@name='localhost.localdomain']/network/virtual-router/entry[@name='default']/routing-table/ip/static-route/entry[@name='{{ name.name }}'];<interface>ethernet1/1</interface><destination>{{ name.destination }}</destination>
+{% endfor %}
+/config/devices/entry[@name='localhost.localdomain']/template-stack/entry[@name='{{ hostname }}_stack']/templates;<member>{{ hostname }}_network</member>
+{% for rule in policies %}
+  {% for item in rule.source_zone %}
+/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='{{ hostname }}']/post-rulebase/security/rules/entry[@name='{{ rule.rule }}']/from;<member>{{ item }}</member>
+  {% endfor %}
+  {% for item in rule.destination_zone %}
+/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='{{ hostname }}']/post-rulebase/security/rules/entry[@name='{{ rule.rule }}']/to;<member>{{ item }}</member>
+  {% endfor %}
+  {% for item in rule.source_prefix %}
+/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='{{ hostname }}']/post-rulebase/security/rules/entry[@name='{{ rule.rule }}']/source;<member>{{ item }}</member>
+  {% endfor %}
+  {% for item in rule.destination_prefix %}
+/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='{{ hostname }}']/post-rulebase/security/rules/entry[@name='{{ rule.rule }}']/destination;<member>{{ item }}</member>
+  {% endfor %}
+  {% for item in rule.service %}
+/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='{{ hostname }}']/post-rulebase/security/rules/entry[@name='{{ rule.rule }}']/service;<member>{{ item }}</member>
+  {% endfor %}
+  {% for item in rule.application %}
+/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='{{ hostname }}']/post-rulebase/security/rules/entry[@name='{{ rule.rule }}']/application;<member>{{ item }}</member>
+  {% endfor %}
+/config/devices/entry[@name='localhost.localdomain']/device-group/entry[@name='{{ hostname }}']/post-rulebase/security/rules/entry[@name='{{ rule.rule }}'];<profile-setting><group><member>{{ rule.security_profile }}</member></group></profile-setting><log-setting>{{ rule.logsetting }}</log-setting><action>{{ rule.action }}</action>
+{% endfor %}
